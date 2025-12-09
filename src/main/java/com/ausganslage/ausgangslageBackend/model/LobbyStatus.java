@@ -2,8 +2,6 @@ package com.ausganslage.ausgangslageBackend.model;
 
 public enum LobbyStatus {
     WAITING,
-    IN_PROGRESS,
+    IN_GAME,
     FINISHED
 }
-
-

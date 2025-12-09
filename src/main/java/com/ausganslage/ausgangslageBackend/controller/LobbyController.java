@@ -70,6 +70,10 @@ public class LobbyController {
             List<LobbyPlayerDto> players
     ) {}
 
+    public record StartRoundRequest(
+            @NotNull Long userId
+    ) {}
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public LobbyDto createLobby(@Valid @RequestBody CreateLobbyRequest request) {
@@ -127,43 +131,27 @@ public class LobbyController {
     }
 
     @PostMapping("/{code}/start")
-    public LobbyDto startGame(@PathVariable String code, @Valid @RequestBody StartGameRequest request) {
+    public Object startRound(@PathVariable String code, @Valid @RequestBody StartRoundRequest request) {
         Lobby lobby = lobbyRepository.findByCode(code)
-                .orElseThrow(() -> new IllegalArgumentException("Lobby not found"));
-
-        if (!Objects.equals(lobby.getHost().getId(), request.hostUserId())) {
-            throw new IllegalArgumentException("Only the host can start the game");
+                .orElse(null);
+        if (lobby == null) {
+            return Map.of("error", "Lobby nicht gefunden");
         }
-
+        if (lobby.getStatus() == LobbyStatus.IN_GAME || lobby.getStatus() == LobbyStatus.FINISHED) {
+            return Map.of("error", "Lobby ist bereits gestartet oder beendet");
+        }
+        if (!Objects.equals(lobby.getHost().getId(), request.userId())) {
+            return Map.of("error", "Nur der Host kann die Runde starten");
+        }
+        // Spieler auf alive = true setzen
         List<LobbyPlayer> players = lobbyPlayerRepository.findByLobby(lobby);
-        if (players.size() < MIN_PLAYERS) {
-            throw new IllegalArgumentException("At least " + MIN_PLAYERS + " players are required to start");
-        }
-
-        // Assign roles: 1 Werewolf, 1 Seer, 1 Witch, 1 Hunter, rest Villagers
-        Collections.shuffle(players, RANDOM);
-
-        List<GameRole> rolesPool = new ArrayList<>();
-        rolesPool.add(GameRole.WEREWOLF);
-        rolesPool.add(GameRole.SEER);
-        rolesPool.add(GameRole.WITCH);
-        rolesPool.add(GameRole.HUNTER);
-
-        while (rolesPool.size() < players.size()) {
-            rolesPool.add(GameRole.VILLAGER);
-        }
-        Collections.shuffle(rolesPool, RANDOM);
-
-        for (int i = 0; i < players.size(); i++) {
-            LobbyPlayer p = players.get(i);
-            p.setRole(rolesPool.get(i));
+        for (LobbyPlayer p : players) {
             p.setAlive(true);
         }
         lobbyPlayerRepository.saveAll(players);
-
-        lobby.setStatus(LobbyStatus.IN_PROGRESS);
+        // Status setzen
+        lobby.setStatus(LobbyStatus.IN_GAME);
         lobbyRepository.save(lobby);
-
         return toDto(lobby);
     }
 
@@ -266,5 +254,3 @@ public class LobbyController {
         return Map.of("error", ex.getMessage());
     }
 }
-
-
