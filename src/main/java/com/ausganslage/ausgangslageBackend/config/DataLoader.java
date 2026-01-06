@@ -1,9 +1,7 @@
 package com.ausganslage.ausgangslageBackend.config;
 
-import com.ausganslage.ausgangslageBackend.model.Person;
-import com.ausganslage.ausgangslageBackend.model.Todo;
-import com.ausganslage.ausgangslageBackend.repository.PersonRepository;
-import com.ausganslage.ausgangslageBackend.repository.TodoRepository;
+import com.ausganslage.ausgangslageBackend.model.*;
+import com.ausganslage.ausgangslageBackend.repository.*;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -11,52 +9,78 @@ import org.springframework.stereotype.Component;
 @Component
 public class DataLoader implements CommandLineRunner {
 
-    private final PersonRepository personRepository;
-    private final TodoRepository todoRepository;
+    private final UserRepository userRepository;
+    private final LobbyRepository lobbyRepository;
+    private final LobbyPlayerRepository lobbyPlayerRepository;
+    private final ChatMessageRepository chatMessageRepository;
 
-    public DataLoader(PersonRepository personRepository, TodoRepository todoRepository) {
-        this.personRepository = personRepository;
-        this.todoRepository = todoRepository;
+    public DataLoader(UserRepository userRepository, LobbyRepository lobbyRepository,
+                     LobbyPlayerRepository lobbyPlayerRepository, ChatMessageRepository chatMessageRepository) {
+        this.userRepository = userRepository;
+        this.lobbyRepository = lobbyRepository;
+        this.lobbyPlayerRepository = lobbyPlayerRepository;
+        this.chatMessageRepository = chatMessageRepository;
     }
 
     @Override
     public void run(String... args) {
-        // Create Persons
-        Person marco = new Person();
-        marco.setName("Marco");
-        personRepository.save(marco);
+        // Benutzer erstellen
+        User user1 = new User();
+        user1.setUsername("alice");
+        user1.setPasswordHash("hashed_password_1");
+        user1 = userRepository.save(user1);
 
-        Person anna = new Person();
-        anna.setName("Anna");
-        personRepository.save(anna);
+        User user2 = new User();
+        user2.setUsername("bob");
+        user2.setPasswordHash("hashed_password_2");
+        user2 = userRepository.save(user2);
 
-        // Add Todos for Marco
-        Todo t1 = new Todo();
-        t1.setTitle("Finish Spring Boot project");
-        t1.setCompleted(false);
-        t1.setPerson(marco);
-        todoRepository.save(t1);
+        User user3 = new User();
+        user3.setUsername("charlie");
+        user3.setPasswordHash("hashed_password_3");
+        user3 = userRepository.save(user3);
 
-        Todo t2 = new Todo();
-        t2.setTitle("Write documentation");
-        t2.setCompleted(true);
-        t2.setPerson(marco);
-        todoRepository.save(t2);
+        // Lobby erstellen (mit user1 als Host)
+        Lobby lobby = new Lobby();
+        lobby.setCode("ABC123");
+        lobby.setHost(user1);
+        lobby.setStatus(LobbyStatus.WAITING);
+        lobby = lobbyRepository.save(lobby);
 
-        // Add Todos for Anna
-        Todo t3 = new Todo();
-        t3.setTitle("Prepare presentation");
-        t3.setCompleted(false);
-        t3.setPerson(anna);
-        todoRepository.save(t3);
+        // Spieler zur Lobby hinzufügen
+        LobbyPlayer player1 = new LobbyPlayer();
+        player1.setLobby(lobby);
+        player1.setUser(user1);
+        player1.setDisplayName("Alice");
+        player1.setAlive(true);
+        lobbyPlayerRepository.save(player1);
 
-        // Add a Todo without a person (optional)
-        Todo t4 = new Todo();
-        t4.setTitle("General task (no person)");
-        t4.setCompleted(false);
-        todoRepository.save(t4);
+        LobbyPlayer player2 = new LobbyPlayer();
+        player2.setLobby(lobby);
+        player2.setUser(user2);
+        player2.setDisplayName("Bob");
+        player2.setAlive(true);
+        lobbyPlayerRepository.save(player2);
 
-        System.out.println("Sample data loaded ✅");
+        LobbyPlayer player3 = new LobbyPlayer();
+        player3.setLobby(lobby);
+        player3.setUser(user3);
+        player3.setDisplayName("Charlie");
+        player3.setAlive(true);
+        lobbyPlayerRepository.save(player3);
+
+        // Chat-Nachrichten hinzufügen
+        ChatMessage msg1 = new ChatMessage();
+        msg1.setLobby(lobby);
+        msg1.setUser(user1);
+        msg1.setContent("Willkommen im Spiel!");
+        chatMessageRepository.save(msg1);
+
+        ChatMessage msg2 = new ChatMessage();
+        msg2.setLobby(lobby);
+        msg2.setUser(user2);
+        msg2.setContent("Lasst uns spielen!");
+        chatMessageRepository.save(msg2);
     }
 }
 
